@@ -1,0 +1,10 @@
+{
+  "name": "websvr-redis", 
+  "description": "Session stored in redis for websvr", 
+  "version": "0.0.1",
+  "author": "Kris Zhang <kris.newghost@gmail.com>",
+  "dependencies": {
+      "redis" : "0.x.x"
+  },
+  "main" : "./redisstore.js"
+}
