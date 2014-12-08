@@ -92,11 +92,17 @@ var RedisStore = module.exports = (function() {
       , idx  = options.select || 0
       ;
 
+    expire = options.expire || expire;
+
     client = redis.createClient(port, host, opts);
 
     auth && client.auth(auth);
 
-    client.select(idx);
+    client.select(idx, function(err, state) {
+      err
+        ? console.log(err)
+        : console.log('Redis store is ready, using DB:', idx);
+    });
 
     onError   && client.removeListener('error', onError);
     onConnect && client.removeListener('connect', onConnect);
