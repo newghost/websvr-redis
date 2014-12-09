@@ -86,7 +86,7 @@ var RedisStore = module.exports = (function() {
     options = opts || options || {};
 
     var host = options.host   || '127.0.0.1'
-      , port = parseInt(options.host) || 6379
+      , port = parseInt(options.port) || 6379
       , opts = options.opts   || {}
       , auth = options.auth
       , idx  = options.select || 0
