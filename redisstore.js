@@ -12,6 +12,7 @@ var RedisStore = module.exports = (function() {
   var client;
 
   var del = function(sid) {
+    console.log('del sid', sid);
     client.del(sid);
   };
 
@@ -30,7 +31,7 @@ var RedisStore = module.exports = (function() {
         start(function(connected) {
           connected
             ? get(sid, cb)
-            : cb && cb(session);
+            : cb && cb(session, sid);
         });
 
         console.log(err);
@@ -40,7 +41,7 @@ var RedisStore = module.exports = (function() {
         } catch(e) {
           del(sid);
         }
-        cb && cb(session);
+        cb && cb(session, sid);
       }
     });
   };
@@ -49,9 +50,12 @@ var RedisStore = module.exports = (function() {
   var expire = 24 * 3600 * 1000;
   /*
   Clear the sessions, you should do it manually somewhere, etc:
-  setInterval(websvr.SessionStore.clear, 200 * 60 * 1000)
+  setInterval(websvr.sessionStore.clear, 200 * 60 * 1000)
   */
   var clear = function() {
+    //default is 24 hours
+    var sessionTimeout = options.sessionTimeout || 24 * 3600 * 1000;
+
     client.keys('*', function (err, keys) {
       if (err) return console.log(err);
 
@@ -62,12 +66,11 @@ var RedisStore = module.exports = (function() {
           ;
 
         if (key.length == 25 && idx > 0) {
-          var stamp = parseInt(key.substr(0, idx), 32);
-          //expired?
-          stamp && stamp > expire && (flag = false);
+          get(key, function(session, key) {
+            var isValid = session && session.__lastAccessTime && (+new Date() - session.__lastAccessTime <= sessionTimeout);
+            !isValid && del(key)
+          })
         }
-
-        flag && del(key);
       }
     });
   };
@@ -91,8 +94,6 @@ var RedisStore = module.exports = (function() {
       , auth = options.auth
       , idx  = options.select || 0
       ;
-
-    expire = options.expire || expire;
 
     client = redis.createClient(port, host, opts);
 
@@ -123,11 +124,11 @@ var RedisStore = module.exports = (function() {
   };
 
   return {
-      get   : get
-    , set   : set
-    , del   : del
-    , clear : clear
-    , start : start
+      get     : get
+    , set     : set
+    , del     : del
+    , clear   : clear
+    , start   : start
   }
 
 })();
