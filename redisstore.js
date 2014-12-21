@@ -9,23 +9,26 @@ var redis = require('redis');
 
 var RedisStore = module.exports = (function() {
 
-  var client;
+  var client
+    , schema = 'session:'
+    ;
 
-  var del = function(sid) {
+  var del = function(sid, cb) {
     console.log('del sid', sid);
-    client.del(sid);
+    client.del(schema + sid, cb);
   };
 
-  var set = function(sid, session) {
-    client.set(sid, JSON.stringify(session), function(err) {
+  var set = function(sid, session, cb) {
+    client.set(schema + sid, JSON.stringify(session), function(err) {
       err && console.error(err);
+      cb  && cb(err);
     });
   };
 
   var get = function(sid, cb) {
     var session = {};
 
-    client.get(sid, function(err, data) {
+    client.get(schema + sid, function(err, data) {
       if (err) {
         //connect error? reconnect and try again
         start(function(connected) {
@@ -56,8 +59,11 @@ var RedisStore = module.exports = (function() {
     //default is 24 hours
     var sessionTimeout = options.sessionTimeout || 24 * 3600 * 1000;
 
-    client.keys('*', function (err, keys) {
+    client.keys(schema + '*', function (err, keys) {
       if (err) return console.log(err);
+
+      console.log(keys);
+      console.log('length', keys.length);
 
       for (var i = 0; i < keys.length; i++) {
         var key  = keys[i]
