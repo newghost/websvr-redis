@@ -18,14 +18,15 @@ var RedisStore = module.exports = (function() {
   }
 
   var set = function(key, object, cb) {
-    !client.connected && start()
-    client.hmset(schema + key, object, function(err) {
+    var sid = schema + key
+    client.hmset(sid, object, function(err) {
       cb && cb(err)
     })
+
+    options.sessionTimeout && client.pexpire(sid, options.sessionTimeout)
   }
 
   var get = function(key, cb) {
-    !client.connected && start()
     client.hgetall(schema + key, function(err, object) {
       cb && cb(object || {})
     })
@@ -37,7 +38,7 @@ var RedisStore = module.exports = (function() {
   var isExpired = function(key) {
     var idx  = key.indexOf('-')
 
-    if (key.length == 25 && idx > 0) {
+    if (key.length == 36 && idx > 0) {
       client.hget(schema + key, '__lastAccessTime', function(err, __lastAccessTime) {
         if (err) {
           del(key)
@@ -93,9 +94,6 @@ var RedisStore = module.exports = (function() {
         ? console.log(err)
         : console.log('Redis store is ready, using DB:', idx)
     })
-
-    onError   && client.removeListener('error', onError)
-    onConnect && client.removeListener('connect', onConnect)
 
     onError = function (err) {
       console.error('Error ' + err)
